@@ -42,19 +42,12 @@ public class WzAddShopCartServiceConnection implements ServiceConnection {
 		mWzAddCartListener = null;
 	}
 
-	/**
-	 * 连接Service并且添加购物车
-	 * 
-	 * @param goodId
-	 *            商品Id
-	 * 
-	 * @return
-	 */
+
 	public int connectAndAddCart(String goodId) {
 		mGoodId = goodId;
 		if (mWzAddCartListener == null) {
 			Intent service = new Intent("com.wz.shopcart.add");
-			boolean isSucess = mContext.bindService(service, this, Context.BIND_AUTO_CREATE);//绑定后自动创建服务
+			boolean isSucess = mContext.bindService(service, this, Context.BIND_AUTO_CREATE);
 			if (isSucess) {
 				return 1;
 			} else {
@@ -62,7 +55,7 @@ public class WzAddShopCartServiceConnection implements ServiceConnection {
 			}
 		} else {
 			try {
-				Log.i(TAG, "已经连接直接AddShopCartService");
+				Log.i(TAG, "Connection AddShopCartService");
 				mWzAddCartListener.register(mWzAddCartSucessListener);
 				mWzAddCartListener.addCart(mGoodId);
 			} catch (RemoteException e) {

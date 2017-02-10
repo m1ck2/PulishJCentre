@@ -1,8 +1,9 @@
 apply plugin: 'com.android.library'
-apply plugin: 'jar-gradle-plugin'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion 19
     buildToolsVersion "25.0.2"
 
     defaultConfig {
@@ -39,17 +40,16 @@ task clearJar(type: Delete) {
     delete 'libs/shopcart.jar'
 }
 
-
 /**
  * 创建打包jar命令
  */
-//task makeJar(type: Copy) {
-//    from('src/main/java/')
-//    from('build/generated/source/aidl/release/')
-//    into('build/libs/')
-//    include('classes.jar')
-//    rename('classes.jar', 'shopcart.jar')
-//}
+task makeSencondJar(type: Copy) {
+    from('src/main/java/')
+    from('build/generated/source/aidl/release/')
+    into('build/libs/')
+    include('classes.jar')
+    rename('classes.jar', 'shopcart.jar')
+}
 
 task makeJar(type: org.gradle.api.tasks.bundling.Jar) {
     /**
@@ -79,7 +79,155 @@ task makeJar(type: org.gradle.api.tasks.bundling.Jar) {
 }
 
 /**
- 在终端执行生成JAR包 gradlew makeJar
+ * 在终端执行生成JAR包 gradlew makeJar
+ */
+makeJar.dependsOn(clearJar, build)
+
+/**
+ * 加载bintray属性文件
+ */
+Properties properties = new Properties()
+File localPropertiesFile = project.file("bintray.properties");
+if (localPropertiesFile.exists()) {
+    properties.load(localPropertiesFile.newDataInputStream())
+}
+/**
+ * 加载项目属性文件
+ */
+File projectPropertiesFile = project.file("project.properties");
+if (projectPropertiesFile.exists()) {
+    properties.load(projectPropertiesFile.newDataInputStream())
+}
+
+/**
+ * 读取项目属性
+ */
+def projectRepositoryName = properties.getProperty("project.repositoryName") //仓库名称
+def projectName = properties.getProperty("project.name")//项目名称
+def projectGroupId = properties.getProperty("project.groupId")//项目Id
+def projectArtifactId = properties.getProperty("project.artifactId")//一般与项目名称相同
+def projectVersionName = android.defaultConfig.versionName //项目版本号
+def projectPackaging = properties.getProperty("project.packaging") //项目打包类型
+def projectSiteUrl = properties.getProperty("project.siteUrl") //项目地址
+def projectGitUrl = properties.getProperty("project.gitUrl")  //项目git地址
+
+/**
+ * 读取bintray属性
+ */
+def bintrayUser = properties.getProperty("bintray.user")  //bintray用户名
+def bintrayApikey = properties.getProperty("bintray.apiKey") //bintray Api Key
+def bintrayOrganizationId = properties.getProperty("bintray.organizationId") //组织Id
+def developerId = properties.getProperty("developer.id") //开发者Id
+def developerName = properties.getProperty("developer.name") //开发者名称
+def developerEmail = properties.getProperty("developer.email") //开发者email地址
+def javadocName = properties.getProperty("javadoc.name") //javadoc名字
+
+/**
+ * 这句代码一定要加否则会出现如下错误
+ * Could not upload to 'https://api.bintray.com/content/coolcode/maven/LibUiBase/1.0.0/CommonLibrary/LibUiBase/1.0.0/LibUiBase-1.0.0.pom': HTTP/1.1 400 Bad Request [
+ message:Unable to upload files: Maven group, artifact or version defined in the pom file do not match the file path 'CommonLibrary/LibUiBase/1.0.0/LibUiBase-1.0.0.p
+ om']
+ */
+group = projectGroupId
+
+/**
+ * 配置生成POM.xml文件的参数
+ */
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                name projectName //项目名
+                groupId projectGroupId //项目Id(一般为唯一包名)
+                artifactId projectArtifactId //一般与项目名相同
+                version projectVersionName //项目版本号
+                packaging projectPackaging //打包类型
+                url projectSiteUrl  //项目地址
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id developerId //开发者id
+                        name developerName //开发者名字
+                        email developerEmail //开发者email地址
+                    }
+                }
+                scm {
+                    connection projectGitUrl
+                    developerConnection projectGitUrl
+                    url projectSiteUrl
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 生成sources.jar
+ */
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+/**
+ * 生成javadoc.jar
+ */
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+/**
+ * javadoc的配置
+ */
+javadoc {
+    options {
+        encoding "UTF-8"
+        charSet 'UTF-8'
+        author true
+        version projectVersionName
+        links "http://docs.oracle.com/javase/7/docs/api"
+        title javadocName
+    }
+}
+
+/**
+ * userOrg为bintray账号信息里面的Organization Id
+ * repo为你创建的仓库名称
+ * 如果上述两个字段写错了，则会出现下面类似的错误
+ * Could not create package 'huangxuanheng/maven/fragmentstack': HTTP/1.1 404 Not Found [message:Repo 'maven' was not found]
  *
  */
-makeJar.dependsOn(clearJar,build)
+bintray {
+    user = bintrayUser
+    key = bintrayApikey
+    configurations = ['archives']
+    pkg {
+        userOrg = bintrayOrganizationId
+        repo = projectRepositoryName
+        name = projectName
+        websiteUrl = projectSiteUrl
+        vcsUrl = projectGitUrl
+        licenses = ["Apache-2.0"]
+        publish = true
+    }
+}
+
+
+
+
