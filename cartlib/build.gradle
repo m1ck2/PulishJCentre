@@ -28,7 +28,6 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.1.0'
     testCompile 'junit:junit:4.12'
 }
 
@@ -218,12 +217,12 @@ bintray {
     key = bintrayApikey
     configurations = ['archives']
     pkg {
-        userOrg = bintrayOrganizationId
-        repo = projectRepositoryName
-        name = projectName
+        userOrg = bintrayUser //组织Id
+        repo = projectRepositoryName  //代码仓库Id
+        name = projectName //项目名称
         websiteUrl = projectSiteUrl
         vcsUrl = projectGitUrl
-        licenses = ["Apache-2.0"]
+        licenses = ['Apache-2.0']
         publish = true
     }
 }
