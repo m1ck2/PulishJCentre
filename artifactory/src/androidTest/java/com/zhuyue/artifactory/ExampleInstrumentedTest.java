@@ -1,4 +1,4 @@
-package com.zhuyue.plugin;
+package com.zhuyue.artifactory;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("com.zhuyue.plugin.test", appContext.getPackageName());
+        assertEquals("com.zhuyue.artifactory.test", appContext.getPackageName());
     }
 }

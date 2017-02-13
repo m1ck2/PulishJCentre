@@ -1,4 +1,4 @@
-package com.zhuyue.plugin;
+package com.zhuyue.artifactory;
 
 import org.junit.Test;
 

@@ -1,1 +1,1 @@
-include ':app', ':cartlib'
+include ':app', ':cartlib', ':artifactory'

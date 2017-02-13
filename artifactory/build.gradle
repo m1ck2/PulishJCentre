@@ -1,0 +1,119 @@
+apply plugin: 'com.android.library'
+apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'maven-publish'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
+
+    defaultConfig {
+        minSdkVersion 15
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    testCompile 'junit:junit:4.12'
+}
+
+Properties properties = new Properties()
+/**
+ * 加载项目属性文件
+ */
+File projectPropertiesFile = project.file("project.properties");
+if (projectPropertiesFile.exists()) {
+    properties.load(projectPropertiesFile.newDataInputStream())
+}
+
+/**
+ * 读取项目相关配置
+ */
+def projectGroupId = properties.getProperty("project.groupId")
+def projectVersion = properties.getProperty("project.version")
+def projectName = properties.getProperty("project.name")
+def projectArtifactId = project.getName()
+
+/**
+ * 加载JFrog属性文件
+ */
+
+File bintrayPropertiesFile = project.file("bintray.properties");
+if (bintrayPropertiesFile.exists()) {
+    properties.load(bintrayPropertiesFile.newDataInputStream())
+}
+
+def bintrayUser = properties.getProperty("bintray.user")
+def bintrayPassword = properties.getProperty("bintray.password")
+
+/**
+ * 读取JForg Artifactory配置文件信息
+ */
+
+publishing {
+    publications {
+        aar(MavenPublication) {
+            groupId projectGroupId
+            version = projectVersion
+            artifactId projectArtifactId
+
+            // Tell maven to prepare the generated "* .aar" file for publishing
+            artifact("$buildDir/outputs/aar/${project.getName()}-release.aar")
+        }
+    }
+}
+
+/**
+ * 配置Jfrog Artifactory
+ */
+artifactory {
+    contextUrl = 'http://192.168.1.137:8081//artifactory'
+    publish {
+        contextUrl = 'http://192.168.1.137:8081//artifactory'  //The base Artifactory URL if not overridden by the publisher/resolver
+        repository {
+            // The Artifactory repository key to publish to
+            repoKey = 'libs-release-local'
+            username = bintrayUser
+            password = bintrayPassword
+        }
+        defaults {
+            // Tell the Artifactory Plugin which artifacts should be published to Artifactory.
+            publications('aar')
+            publishArtifacts = true
+
+            // Properties to be attached to the published artifacts.
+            properties = ['qa.level': 'basic', 'dev.team': 'core']
+            // Publish generated POM files to Artifactory (true by default)
+            publishPom = true
+        }
+    }
+    resolve {
+        contextUrl = 'http://192.168.1.137:8081//artifactory'
+        //The base Artifactory URL for the resolver
+        repository {
+            repoKey = 'libs-release-local'
+            //The Artifactory (preferably virtual) repository key to resolve from
+            username = bintrayUser
+            //Optional resolver user name (leave out to use anonymous resolution)
+            password = bintrayPassword   //The resolver password
+            maven = true
+            //Resolve Maven-style artifacts and descriptors (true by default)
+        }
+    }
+}
+
